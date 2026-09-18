@@ -1,0 +1,385 @@
+<script setup>
+import { ref, reactive, computed, nextTick, onMounted } from 'vue'
+import { useToast } from '../composables/useToast.js'
+import { login } from '../services/auth.js'
+
+const { success, error } = useToast()
+
+/* ---------- 表单状态 ---------- */
+const form = reactive({
+  account: '',
+  password: '',
+  remember: true
+})
+const errors = reactive({ account: '', password: '' })
+const shake = reactive({ account: false, password: false })
+
+const showPwd = ref(false)
+const loading = ref(false)
+const pwdType = computed(() => (showPwd.value ? 'text' : 'password'))
+
+const accountRef = ref(null)
+const pwdRef = ref(null)
+const rootRef = ref(null)
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
+const PHONE_RE = /^1[3-9]\d{9}$/
+
+/* ---------- 错误提示 ---------- */
+function setError(field, msg, withShake = true) {
+  errors[field] = msg
+  if (!withShake) return
+  shake[field] = false
+  nextTick(() => {
+    void rootRef.value?.offsetWidth // 强制重排，重放抖动动画
+    shake[field] = true
+  })
+}
+function clearError(field) {
+  errors[field] = ''
+  shake[field] = false
+}
+
+/* ---------- 校验 ---------- */
+function validateAccount(silent = false) {
+  const v = form.account.trim()
+  if (!v) {
+    if (!silent) setError('account', '请输入邮箱或手机号')
+    return false
+  }
+  if (!EMAIL_RE.test(v) && !PHONE_RE.test(v)) {
+    if (!silent) setError('account', '邮箱或手机号格式不正确')
+    return false
+  }
+  clearError('account')
+  return true
+}
+
+function validatePassword(silent = false) {
+  const v = form.password
+  if (!v) {
+    if (!silent) setError('password', '请输入密码')
+    return false
+  }
+  if (v.length < 6) {
+    if (!silent) setError('password', '密码至少 6 位')
+    return false
+  }
+  clearError('password')
+  return true
+}
+
+/* 失焦即校验，输入时清除错误 */
+function onAccountBlur() { if (form.account) validateAccount() }
+function onPwdBlur() { if (form.password) validatePassword() }
+function onAccountInput() { clearError('account') }
+function onPwdInput() { clearError('password') }
+
+/* 大写锁定提示 */
+function onPwdKeyup(e) {
+  const on = e.getModifierState && e.getModifierState('CapsLock')
+  if (on) {
+    setError('password', '大写锁定已开启', false)
+  } else if (errors.password === '大写锁定已开启') {
+    clearError('password')
+  }
+}
+
+/* ---------- 密码可见性 ---------- */
+function togglePwd() {
+  showPwd.value = !showPwd.value
+  nextTick(() => pwdRef.value?.focus())
+}
+
+/* ---------- 提交 ---------- */
+async function onSubmit() {
+  if (!validateAccount()) return accountRef.value?.focus()
+  if (!validatePassword()) return pwdRef.value?.focus()
+
+  loading.value = true
+  try {
+    await login({ ...form })
+    success('登录成功，正在跳转…')
+    setTimeout(() => success('演示页面：此处应跳转到控制台'), 900)
+  } catch (e) {
+    error(e.message || '网络异常，请稍后重试')
+    setError('password', '密码不正确')
+    pwdRef.value?.select()
+  } finally {
+    loading.value = false
+  }
+}
+
+/* ---------- 占位交互 ---------- */
+function onRegister() { success('注册页面待接入') }
+function onForgot() { success('忘记密码流程待接入') }
+function onOAuth(provider) { success(`即将通过 ${provider} 授权登录`) }
+
+/* 宽屏自动聚焦 */
+onMounted(() => {
+  if (window.matchMedia('(min-width: 901px)').matches) accountRef.value?.focus()
+})
+</script>
+
+<template>
+  <main class="main" ref="rootRef">
+    <h2>账号登录</h2>
+    <p class="sub">还没有账号？<a href="#" @click.prevent="onRegister">立即注册</a></p>
+
+    <form novalidate @submit.prevent="onSubmit">
+      <!-- 邮箱 / 手机号 -->
+      <div class="field" :class="{ invalid: errors.account, shake: shake.account }">
+        <label for="account">邮箱 / 手机号</label>
+        <div class="control">
+          <span class="icon">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round">
+              <rect x="2.5" y="4.5" width="19" height="15" rx="3" />
+              <path d="m3 7 8.1 5.6a1.6 1.6 0 0 0 1.8 0L21 7" />
+            </svg>
+          </span>
+          <input
+            id="account"
+            ref="accountRef"
+            v-model="form.account"
+            type="text"
+            autocomplete="username"
+            placeholder="you@example.com"
+            :aria-invalid="!!errors.account"
+            @blur="onAccountBlur"
+            @input="onAccountInput"
+          />
+        </div>
+        <p class="error">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+            <circle cx="12" cy="12" r="9.5" /><path d="M12 7.5v5.5M12 16.4v.1" />
+          </svg>
+          <span>{{ errors.account }}</span>
+        </p>
+      </div>
+
+      <!-- 密码 -->
+      <div class="field" :class="{ invalid: errors.password, shake: shake.password }">
+        <label for="password">密码</label>
+        <div class="control has-toggle">
+          <span class="icon">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round">
+              <rect x="4" y="10.2" width="16" height="10.3" rx="2.6" />
+              <path d="M8 10.2V7.4a4 4 0 0 1 8 0v2.8" />
+            </svg>
+          </span>
+          <input
+            id="password"
+            ref="pwdRef"
+            v-model="form.password"
+            :type="pwdType"
+            autocomplete="current-password"
+            placeholder="请输入密码"
+            :aria-invalid="!!errors.password"
+            @blur="onPwdBlur"
+            @input="onPwdInput"
+            @keyup="onPwdKeyup"
+          />
+          <button
+            class="toggle"
+            type="button"
+            :aria-label="showPwd ? '隐藏密码' : '显示密码'"
+            :aria-pressed="showPwd"
+            @click="togglePwd"
+          >
+            <!-- 睁眼 / 闭眼图标 -->
+            <svg v-if="!showPwd" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round">
+              <path d="M1.8 12S5.4 5.6 12 5.6 22.2 12 22.2 12 18.6 18.4 12 18.4 1.8 12 1.8 12Z" />
+              <circle cx="12" cy="12" r="3.1" />
+            </svg>
+            <svg v-else width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round">
+              <path d="M4.2 4.2 19.8 19.8" />
+              <path d="M9.6 5.9A9.7 9.7 0 0 1 12 5.6c6.6 0 10.2 6.4 10.2 6.4a17.9 17.9 0 0 1-3.5 4.2M6.3 7.9A18 18 0 0 0 1.8 12s3.6 6.4 10.2 6.4c1.3 0 2.4-.2 3.4-.6" />
+              <path d="M9.9 10.1a3.1 3.1 0 0 0 4.3 4.3" />
+            </svg>
+          </button>
+        </div>
+        <p class="error">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+            <circle cx="12" cy="12" r="9.5" /><path d="M12 7.5v5.5M12 16.4v.1" />
+          </svg>
+          <span>{{ errors.password }}</span>
+        </p>
+      </div>
+
+      <!-- 记住我 / 忘记密码 -->
+      <div class="row">
+        <label class="check">
+          <input v-model="form.remember" type="checkbox" />
+          <span class="box">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m4.5 12.5 5 5 10-11" />
+            </svg>
+          </span>
+          记住我
+        </label>
+        <a class="link" href="#" @click.prevent="onForgot">忘记密码？</a>
+      </div>
+
+      <!-- 提交 -->
+      <button class="btn" type="submit" :class="{ loading }" :disabled="loading">
+        <span class="label">登录</span>
+        <span class="spin"><span class="spinner"></span></span>
+      </button>
+    </form>
+
+    <div class="divider">或使用以下方式登录</div>
+
+    <div class="oauth">
+      <button type="button" @click="onOAuth('微信')">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="#07C160"><path d="M9.2 3C4.9 3 1.5 5.8 1.5 9.3c0 2 1.1 3.7 2.9 4.9l-.7 2.2 2.5-1.3c.6.2 1.3.3 2 .3h.6a5.6 5.6 0 0 1-.2-1.5c0-3.2 3.1-5.8 7-5.8h.6C15.6 5 12.7 3 9.2 3Zm-2.5 3.4a.95.95 0 1 1 0 1.9.95.95 0 0 1 0-1.9Zm5 0a.95.95 0 1 1 0 1.9.95.95 0 0 1 0-1.9Z"/><path d="M22.5 13.9c0-2.8-2.8-5.1-6.2-5.1s-6.2 2.3-6.2 5.1 2.8 5.1 6.2 5.1c.6 0 1.1-.1 1.7-.2l2.1 1.1-.6-1.8c1.8-.9 3-2.5 3-4.2Zm-8.2-1.6a.8.8 0 1 1 0 1.6.8.8 0 0 1 0-1.6Zm4.1 0a.8.8 0 1 1 0 1.6.8.8 0 0 1 0-1.6Z"/></svg>
+        微信
+      </button>
+      <button type="button" @click="onOAuth('GitHub')">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="#181717"><path d="M12 1.8a10.2 10.2 0 0 0-3.2 19.9c.5.1.7-.2.7-.5v-1.9c-2.8.6-3.4-1.3-3.4-1.3-.5-1.2-1.2-1.5-1.2-1.5-.9-.7.1-.7.1-.7 1 .1 1.6 1.1 1.6 1.1.9 1.6 2.4 1.1 3 .9.1-.7.4-1.1.7-1.4-2.3-.3-4.7-1.1-4.7-5.1 0-1.1.4-2 1-2.7-.1-.3-.5-1.3.1-2.7 0 0 .9-.3 2.8 1a9.7 9.7 0 0 1 5.2 0c1.9-1.3 2.8-1 2.8-1 .6 1.4.2 2.4.1 2.7.7.7 1 1.6 1 2.7 0 4-2.4 4.8-4.7 5.1.4.4.7 1 .7 2v2.9c0 .3.2.6.7.5A10.2 10.2 0 0 0 12 1.8Z"/></svg>
+        GitHub
+      </button>
+      <button type="button" @click="onOAuth('企业 SSO')">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#5b5bd6" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 20.5h17M5.5 20.5V6.2L12 3.5l6.5 2.7v14.3M9.6 10h1.2M13.2 10h1.2M9.6 13.6h1.2M13.2 13.6h1.2M11 20.5v-3.2h2v3.2"/></svg>
+        SSO
+      </button>
+    </div>
+
+    <p class="foot">
+      登录即表示你同意我们的 <a href="#">服务条款</a> 与 <a href="#">隐私政策</a>
+    </p>
+  </main>
+</template>
+
+<style scoped>
+.main { padding: 52px 56px; display: flex; flex-direction: column; justify-content: center; }
+.main h2 { margin: 0 0 8px; font-size: 25px; letter-spacing: -.2px; }
+.sub { margin: 0 0 30px; color: var(--ink-3); font-size: 14px; }
+.sub a { color: var(--brand-1); text-decoration: none; font-weight: 600; }
+.sub a:hover { text-decoration: underline; }
+
+.field { margin-bottom: 18px; }
+.field > label {
+  display: block; margin-bottom: 8px;
+  font-size: 13px; font-weight: 600; color: var(--ink-2);
+}
+.control { position: relative; display: flex; align-items: center; }
+.control .icon {
+  position: absolute; left: 14px;
+  color: var(--ink-3); display: grid; place-items: center;
+  pointer-events: none; transition: color .18s;
+}
+.control input {
+  width: 100%;
+  height: 48px;
+  padding: 0 14px 0 42px;
+  font-size: 14.5px;
+  font-family: inherit;
+  color: var(--ink);
+  background: #fbfcfe;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  outline: none;
+  transition: border-color .18s, box-shadow .18s, background .18s;
+}
+.control input::placeholder { color: #b3bacb; }
+.control input:hover { border-color: #d3d9e8; }
+.control input:focus {
+  background: #fff;
+  border-color: var(--brand-1);
+  box-shadow: 0 0 0 4px rgba(91, 91, 214, .13);
+}
+.control:focus-within .icon { color: var(--brand-1); }
+
+.control.has-toggle input { padding-right: 46px; }
+.toggle {
+  position: absolute; right: 8px;
+  width: 34px; height: 34px; border: 0; border-radius: 9px;
+  background: transparent; color: var(--ink-3);
+  cursor: pointer; display: grid; place-items: center;
+  transition: background .16s, color .16s;
+}
+.toggle:hover { background: #f0f2f8; color: var(--ink-2); }
+
+/* 错误态 */
+.field.invalid input { border-color: var(--danger); background: #fffafb; }
+.field.invalid input:focus { box-shadow: 0 0 0 4px rgba(229, 72, 77, .12); }
+.field.invalid .icon { color: var(--danger); }
+.error {
+  display: none; align-items: center; gap: 5px;
+  margin: 7px 0 0; font-size: 12.5px; color: var(--danger);
+}
+.field.invalid .error { display: flex; }
+.shake { animation: shake .36s cubic-bezier(.36, .07, .19, .97); }
+
+/* 记住我 / 忘记密码 */
+.row { display: flex; align-items: center; justify-content: space-between; margin: 4px 0 26px; }
+.check { display: inline-flex; align-items: center; gap: 9px; cursor: pointer; user-select: none; font-size: 13.5px; color: var(--ink-2); }
+.check input { position: absolute; opacity: 0; width: 0; height: 0; }
+.box {
+  width: 18px; height: 18px; border-radius: 6px; flex: none;
+  border: 1.5px solid #cbd1e0; background: #fff;
+  display: grid; place-items: center;
+  transition: background .16s, border-color .16s;
+}
+.box svg { opacity: 0; transform: scale(.5); transition: opacity .16s, transform .16s; }
+.check input:checked + .box { background: var(--brand-1); border-color: var(--brand-1); }
+.check input:checked + .box svg { opacity: 1; transform: scale(1); }
+.check input:focus-visible + .box { box-shadow: 0 0 0 4px rgba(91, 91, 214, .18); }
+.link { font-size: 13.5px; color: var(--brand-1); text-decoration: none; font-weight: 600; }
+.link:hover { text-decoration: underline; }
+
+/* 主按钮 */
+.btn {
+  position: relative;
+  width: 100%; height: 50px;
+  border: 0; border-radius: 12px;
+  font-family: inherit; font-size: 15px; font-weight: 600; color: #fff;
+  background: linear-gradient(120deg, var(--brand-1), var(--brand-2));
+  cursor: pointer;
+  box-shadow: 0 10px 22px -10px rgba(91, 91, 214, .85);
+  transition: transform .14s, box-shadow .2s, filter .2s;
+  overflow: hidden;
+}
+.btn:hover { filter: brightness(1.06); box-shadow: 0 14px 28px -10px rgba(91, 91, 214, .95); }
+.btn:active { transform: translateY(1px); }
+.btn:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(91, 91, 214, .25); }
+.btn[disabled] { cursor: not-allowed; filter: saturate(.7) brightness(1.02); }
+.btn .label { transition: opacity .2s; }
+.btn .spin { position: absolute; inset: 0; display: grid; place-items: center; opacity: 0; transition: opacity .2s; }
+.btn.loading .label { opacity: 0; }
+.btn.loading .spin { opacity: 1; }
+.btn.loading { pointer-events: none; }
+.spinner {
+  width: 19px; height: 19px; border-radius: 50%;
+  border: 2.2px solid rgba(255, 255, 255, .35);
+  border-top-color: #fff;
+  animation: spin .75s linear infinite;
+}
+
+/* 分割线 */
+.divider { display: flex; align-items: center; gap: 14px; margin: 26px 0 18px; color: var(--ink-3); font-size: 12.5px; }
+.divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
+/* 第三方登录 */
+.oauth { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.oauth button {
+  height: 46px; border-radius: 12px; cursor: pointer;
+  background: #fff; border: 1.5px solid var(--line);
+  font-family: inherit; font-size: 13.5px; color: var(--ink-2);
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: border-color .16s, background .16s, transform .14s;
+}
+.oauth button:hover { border-color: #c9d0e2; background: #fafbff; }
+.oauth button:active { transform: translateY(1px); }
+
+.foot { margin: 28px 0 0; text-align: center; font-size: 12.5px; color: var(--ink-3); line-height: 1.7; }
+.foot a { color: var(--ink-2); }
+
+@media (max-width: 900px) {
+  .main { padding: 34px 28px 38px; }
+}
+@media (max-width: 420px) {
+  .main { padding: 28px 20px 30px; }
+  .oauth { grid-template-columns: 1fr; }
+}
+</style>

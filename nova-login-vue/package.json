@@ -1,0 +1,19 @@
+{
+  "name": "nova-login-vue",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Nova 登录页（由 index.html 改造的 Vue 3 + Vite 项目）",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.1",
+    "vite": "^6.0.7"
+  }
+}
