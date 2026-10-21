@@ -52,3 +52,10 @@ npx vite
 - 用户要求：脚本用 GBK 编码、路径用相对路径、脚本不能依赖 node_modules/target 已存在
 - 沙箱执行启动命令时环境变量 SERVER_PORT 会被劫持导致端口错乱，务必显式指定 8080（详见后端 AI-CONTEXT 的踩坑记录）
 - 如果 start.bat 报 npm 不存在 → 电脑重置把 Node 也删了，需先装 Node 22+
+- **node_modules 残缺（2026-10-16 实测踩坑）**：目录在但 `node_modules\.bin\vite.cmd` 被删时，旧判断 `if not exist "node_modules"` 会误判“已安装”而跳过安装，
+  随后 `npx vite` 找不到本地包会自动拉最新 vite（v7/rolldown），崩在 `Cannot find module './rolldown-binding.win32-x64-msvc.node'`。
+  现在 start.bat 改为：校验 `.bin\vite.cmd` / `vue` / `vite` / `@vitejs\plugin-vue` 四个关键文件 → 缺失才装 → 装完再复检 → 用 `npm run dev` 走本地 vite（**别改回 npx vite**）。
+- **重装提速（2026-10-16）**：npm 缓存在 `C:\Users\Administrator\AppData\Local\npm-cache`（不在项目里，重置不会被删）。
+  start.bat 里的 npm 命令加了 `--prefer-offline --no-audit --no-fund`：缓存命中时重装 **128 个包约 6 秒**（冷缓存仍需约 5 分钟走网络）。
+  别去掉这几个参数，否则每次开机重装都要等 5 分钟。
+- **端口占用预检**：start.bat 启动前会查 8080/5173 是否已在监听，已占用则提示「可能已经启动过」并退出，避免重复双击导致 `Port already in use`。
