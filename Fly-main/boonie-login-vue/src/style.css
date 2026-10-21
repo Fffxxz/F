@@ -1,0 +1,42 @@
+:root {
+  --forest: #2f7d4f;
+  --forest-deep: #1f5c39;
+  --leaf: #4caf6d;
+  --wood: #a9743c;
+  --wood-light: #c89b63;
+  --cream: #fff8ec;
+  --honey: #ffb703;
+  --text: #3a2e1f;
+  --muted: #8a7a63;
+  --danger: #e4572e;
+  --radius: 18px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: "PingFang SC", "Microsoft YaHei", "Comic Sans MS", sans-serif;
+  background:
+    radial-gradient(circle at 20% 20%, #d6f0dd 0, transparent 45%),
+    radial-gradient(circle at 80% 10%, #cdeafc 0, transparent 40%),
+    var(--cream);
+  background-size: 200% 200%, 200% 200%, 100% 100%;
+  animation: bgShift 14s ease-in-out infinite;
+  color: var(--text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+@keyframes bgShift {
+  0%,
+  100% {
+    background-position: 0% 0%, 100% 0%, 0 0;
+  }
+  50% {
+    background-position: 100% 50%, 0% 50%, 0 0;
+  }
+}

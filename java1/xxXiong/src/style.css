@@ -1,0 +1,65 @@
+:root {
+  --forest: #2f7d4f;
+  --forest-deep: #1f5c39;
+  --leaf: #4caf6d;
+  --wood: #a9743c;
+  --wood-light: #c89b63;
+  --cream: #fff8ec;
+  --honey: #ffb703;
+  --text: #3a2e1f;
+  --muted: #8a7a63;
+  --danger: #e4572e;
+  --radius: 18px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  font-family: "PingFang SC", "Microsoft YaHei", "Comic Sans MS", sans-serif;
+  background:
+    radial-gradient(circle at 20% 20%, #d6f0dd 0, transparent 45%),
+    radial-gradient(circle at 80% 10%, #cdeafc 0, transparent 40%),
+    var(--cream);
+  background-size: 200% 200%, 200% 200%, 100% 100%;
+  animation: bgShift 14s ease-in-out infinite;
+  color: var(--text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+@keyframes bgShift {
+  0%,
+  100% {
+    background-position: 0% 0%, 100% 0%, 0 0;
+  }
+  50% {
+    background-position: 100% 50%, 0% 50%, 0 0;
+  }
+}
+
+/* 桌面优化：超宽屏下限制整体宽度并居中，避免内容被无限拉伸 */
+.auth-page {
+  max-width: 1280px;
+  margin: 0 auto;
+  box-shadow: 0 0 80px rgba(47, 125, 79, 0.08);
+}
+
+/* 尊重「减少动态效果」的系统偏好（无障碍） */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

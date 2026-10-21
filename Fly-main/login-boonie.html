@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>熊出没 · 森林登录</title>
+<style>
+  :root {
+    --forest: #2f7d4f;
+    --forest-deep: #1f5c39;
+    --leaf: #4caf6d;
+    --wood: #a9743c;
+    --wood-light: #c89b63;
+    --cream: #fff8ec;
+    --honey: #ffb703;
+    --text: #3a2e1f;
+    --muted: #8a7a63;
+    --danger: #e4572e;
+    --radius: 18px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "PingFang SC", "Microsoft YaHei", "Comic Sans MS", sans-serif;
+    background:
+      radial-gradient(circle at 20% 20%, #d6f0dd 0, transparent 45%),
+      radial-gradient(circle at 80% 10%, #cdeafc 0, transparent 40%),
+      var(--cream);
+    background-size: 200% 200%, 200% 200%, 100% 100%;
+    animation: bgShift 14s ease-in-out infinite;
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    -webkit-font-smoothing: antialiased;
+  }
+  @keyframes bgShift {
+    0%, 100% { background-position: 0% 0%, 100% 0%, 0 0; }
+    50% { background-position: 100% 50%, 0% 50%, 0 0; }
+  }
+
+  /* 左侧森林区 */
+  .forest {
+    display: none;
+    flex: 1;
+    background: linear-gradient(160deg, #3a9d5d 0%, #1f5c39 100%);
+    color: #fff;
+    padding: 48px;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+  }
+  .forest::after {
+    content: "🌲🌲🌲";
+    position: absolute; bottom: 16px; left: 0; right: 0;
+    text-align: center; font-size: 34px; letter-spacing: 6px; opacity: .55;
+  }
+  .forest .brand { font-size: 26px; font-weight: 800; letter-spacing: .04em; }
+  .forest .hero-bear { font-size: 120px; text-align: center; line-height: 1; animation: floatY 4s ease-in-out infinite; }
+  @keyframes floatY { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-14px)} }
+  .forest h1 { font-size: 34px; font-weight: 800; text-shadow: 0 2px 0 rgba(0,0,0,.15); }
+  .forest p { font-size: 16px; opacity: .92; max-width: 320px; margin-top: 10px; }
+
+  /* 右侧表单 */
+  .panel {
+    flex: 1; display: flex; align-items: center; justify-content: center; padding: 22px;
+  }
+  .card {
+    width: 100%; max-width: 380px;
+    background: #fff;
+    border: 3px solid var(--wood-light);
+    border-radius: var(--radius);
+    padding: 34px 30px 30px;
+    box-shadow: 0 14px 40px rgba(47, 125, 79, .15);
+    position: relative;
+    animation: cardIn .7s cubic-bezier(.22,1,.36,1) both;
+  }
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(28px) scale(.96); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .card.shake { animation: shake .45s; }
+  @keyframes shake {
+    0%,100%{transform:translateX(0)}
+    20%{transform:translateX(-9px) rotate(-1deg)}
+    40%{transform:translateX(9px) rotate(1deg)}
+    60%{transform:translateX(-6px)}
+    80%{transform:translateX(6px)}
+  }
+  .bear-badge {
+    position: absolute; top: -42px; left: 50%; transform: translateX(-50%);
+    font-size: 56px; background: var(--honey); width: 84px; height: 84px;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    border: 4px solid #fff; box-shadow: 0 6px 16px rgba(0,0,0,.12);
+    animation: bob 3s ease-in-out infinite;
+  }
+  @keyframes bob {
+    0%,100% { transform: translateX(-50%) translateY(0) rotate(-4deg); }
+    50% { transform: translateX(-50%) translateY(-9px) rotate(4deg); }
+  }
+  .card h2 { text-align: center; font-size: 22px; font-weight: 800; margin: 26px 0 4px; color: var(--forest-deep); }
+  .card .sub { text-align: center; font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+
+  .field { margin-bottom: 16px; }
+  .field label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--forest-deep); }
+  .input {
+    width: 100%; height: 46px; padding: 0 14px; font-size: 15px;
+    background: #fffdf8; color: var(--text);
+    border: 2px solid var(--wood-light); border-radius: 12px;
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  .input:focus {
+    outline: none; border-color: var(--forest);
+    box-shadow: 0 0 0 3px rgba(47, 125, 79, .18);
+    transform: translateY(-1px);
+  }
+  .input.invalid { border-color: var(--danger); }
+  .input-wrap { position: relative; }
+  .toggle-pwd {
+    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    border: none; background: transparent; color: var(--muted);
+    font-size: 13px; cursor: pointer; padding: 6px;
+  }
+  .toggle-pwd:hover { color: var(--forest); }
+  .err { font-size: 12px; color: var(--danger); margin-top: 5px; min-height: 15px; }
+
+  .row { display: flex; align-items: center; justify-content: space-between; margin: 2px 0 20px; font-size: 13px; }
+  .row label { display: flex; align-items: center; gap: 6px; color: var(--muted); cursor: pointer; }
+  .row a { color: var(--forest); text-decoration: none; font-weight: 600; }
+  .row a:hover { text-decoration: underline; }
+
+  .submit {
+    width: 100%; height: 48px; border: none; border-radius: 14px;
+    background: linear-gradient(180deg, #ffc83d 0%, var(--honey) 100%);
+    color: #5a3d00; font-size: 16px; font-weight: 800; cursor: pointer;
+    box-shadow: 0 6px 0 #e09b00; transition: transform .08s ease, box-shadow .08s ease;
+    position: relative; overflow: hidden;
+  }
+  .submit::after {
+    content: ""; position: absolute; top: 0; left: -60%;
+    width: 50%; height: 100%;
+    background: linear-gradient(120deg, transparent, rgba(255,255,255,.6), transparent);
+    transform: skewX(-20deg);
+    animation: shine 3.2s ease-in-out infinite;
+  }
+  @keyframes shine {
+    0% { left: -60%; }
+    55%,100% { left: 130%; }
+  }
+  .submit:hover { filter: brightness(1.03); }
+  .submit:active { transform: translateY(4px); box-shadow: 0 2px 0 #e09b00; }
+  .submit:disabled { opacity: .6; cursor: not-allowed; box-shadow: 0 6px 0 #e09b00; }
+
+  .alt { text-align: center; font-size: 13px; color: var(--muted); margin-top: 20px; }
+  .alt a { color: var(--forest); text-decoration: none; font-weight: 600; }
+  .alt a:hover { text-decoration: underline; }
+
+  /* 飘落叶 & 云 */
+  .leaves, .clouds { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+  .leaf { position: absolute; top: -40px; font-size: 22px; animation: fall linear infinite; }
+  @keyframes fall {
+    0% { transform: translateY(-40px) rotate(0deg); opacity: 0; }
+    10% { opacity: 1; }
+    100% { transform: translateY(105vh) rotate(360deg); opacity: .9; }
+  }
+  .cloud { position: absolute; font-size: 40px; opacity: .85; animation: drift linear infinite; }
+  @keyframes drift {
+    from { transform: translateX(-30%); }
+    to { transform: translateX(130%); }
+  }
+
+  @media (min-width: 860px) { .forest { display: flex; } }
+</style>
+</head>
+<body>
+  <aside class="forest">
+    <div class="clouds">
+      <span class="cloud" style="top:12%;animation-duration:26s;animation-delay:0s">☁️</span>
+      <span class="cloud" style="top:34%;font-size:28px;animation-duration:34s;animation-delay:8s">☁️</span>
+    </div>
+    <div class="leaves">
+      <span class="leaf" style="left:10%;animation-duration:9s;animation-delay:0s">🍃</span>
+      <span class="leaf" style="left:30%;animation-duration:12s;animation-delay:2s">🍂</span>
+      <span class="leaf" style="left:52%;animation-duration:10s;animation-delay:4s">🍃</span>
+      <span class="leaf" style="left:72%;animation-duration:13s;animation-delay:1s">🍂</span>
+      <span class="leaf" style="left:90%;animation-duration:11s;animation-delay:6s">🍃</span>
+    </div>
+    <div class="brand">🐻 熊出没</div>
+    <div class="hero-bear">🐻🌳</div>
+    <div>
+      <h1>欢迎来到<br />狗熊岭森林</h1>
+      <p>和熊大熊二一起守护森林！登录后开启你的冒险之旅。</p>
+    </div>
+  </aside>
+
+  <main class="panel">
+    <form class="card" id="loginForm" novalidate>
+      <div class="bear-badge">🐻</div>
+      <h2>森林登录</h2>
+      <div class="sub">和熊大熊二一起玩</div>
+
+      <div class="field">
+        <label for="email">📮 邮箱</label>
+        <div class="input-wrap">
+          <input class="input" type="email" id="email" name="email"
+                 placeholder="you@example.com" autocomplete="email" />
+        </div>
+        <div class="err" id="emailErr"></div>
+      </div>
+
+      <div class="field">
+        <label for="password">🔑 密码</label>
+        <div class="input-wrap">
+          <input class="input" type="password" id="password" name="password"
+                 placeholder="请输入密码" autocomplete="current-password" />
+          <button type="button" class="toggle-pwd" id="togglePwd">显示</button>
+        </div>
+        <div class="err" id="pwdErr"></div>
+      </div>
+
+      <div class="row">
+        <label><input type="checkbox" id="remember" /> 记住我</label>
+        <a href="#">忘记密码？</a>
+      </div>
+
+      <button type="submit" class="submit" id="submitBtn">🚪 进入森林</button>
+
+      <div class="alt">还没有账号？<a href="#">和熊二一起注册</a></div>
+    </form>
+  </main>
+
+  <script>
+    const form = document.getElementById("loginForm");
+    const email = document.getElementById("email");
+    const password = document.getElementById("password");
+    const emailErr = document.getElementById("emailErr");
+    const pwdErr = document.getElementById("pwdErr");
+    const submitBtn = document.getElementById("submitBtn");
+    const togglePwd = document.getElementById("togglePwd");
+
+    togglePwd.addEventListener("click", () => {
+      const isPwd = password.type === "password";
+      password.type = isPwd ? "text" : "password";
+      togglePwd.textContent = isPwd ? "隐藏" : "显示";
+    });
+
+    function validate() {
+      let ok = true;
+      emailErr.textContent = ""; pwdErr.textContent = "";
+      email.classList.remove("invalid"); password.classList.remove("invalid");
+
+      const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim());
+      if (!emailOk) { emailErr.textContent = "请输入有效的邮箱地址"; email.classList.add("invalid"); ok = false; }
+      if (password.value.length < 6) { pwdErr.textContent = "密码至少 6 位哦"; password.classList.add("invalid"); ok = false; }
+      return ok;
+    }
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      if (!validate()) {
+        form.classList.remove("shake");
+        void form.offsetWidth; // 触发重排以重启动画
+        form.classList.add("shake");
+        return;
+      }
+      submitBtn.disabled = true;
+      submitBtn.textContent = "进入中…";
+      setTimeout(() => {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "🚪 进入森林";
+        alert("登录成功！欢迎来到狗熊岭 🐻🌲");
+      }, 1000);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+[
+  {
+    "id": 1,
+    "name": "熊大",
+    "email": "admin@boonie.com",
+    "passwordHash": "e8b8300ad16c64927c70ec3d536e1170:c35fad19192a2a11352314383759fe7e6147fc5406416429f28030ff03270d575fa4e32b9aeaf040090241d5d8378d6e064edcb8f0c629117fd89a23dbfd5807"
+  },
+  {
+    "id": 2,
+    "name": "熊二",
+    "email": "bear2@boonie.com",
+    "passwordHash": "14a2f215d074bd1bb931733274f2b935:c6e94b6738ba8de7c5076f801de5da4218017f5e5297deea134deff204c3dc25bdc8dd7363b4016372cd59c94e019ce2e1b19ca17b95ab5fa8c7a60c91f1f9f0"
+  }
+]
