@@ -7,13 +7,14 @@
 「森林登录注册后端」：Spring Boot 3.4.5 + MyBatis-Plus 3.5.9 + MySQL 8 + Lombok + Thymeleaf。
 - 端口 **8080**（dev profile，见 `src/main/resources/application-dev.properties`）
 - 数据库：本地 MySQL `boonie_auth` 库 / `boonie_user` 表（root / 123456，端口 3306）
-- 种子用户（表为空时 `DataInitializer` 自动写入）：熊大 `admin@boonie.com`、熊二 `bear2@boonie.com`，密码均为 `bear123456`
+- 用户权限：`boonie_user.role`（`0` 管理员、`1` 普通用户，注册固定为 `1`）；密码按用户要求以明文存于 `password` 字段
+- 种子用户（表为空时 `DataInitializer` 自动写入）：熊大 `admin@boonie.com`（管理员）、熊二 `bear2@boonie.com`（普通用户），密码均为 `bear123456`
 - 前端配套项目在 `../boonie-auth-pro`（Vue 3 + Vite，5173 端口，`/api` 代理到 8080）
 
 ## 一键脚本（根目录，GBK 编码，双击即可）
 - `start.bat`：检查 Java → 检查 MySQL(3306) → 用 `db-init.sql` 幂等建库建表 → `mvnw spring-boot:run`（target 被删会自动重新编译，无需手动 build）
 - `stop.bat`：按端口 8080 + 窗口标题杀掉后端进程
-- `db-init.sql`：建库建表脚本，幂等可重复执行
+- `db-init.sql`：新库建库建表脚本，幂等可重复执行；既有老库已用 `db-migration-role.sql` 升级（明文密码 + role，仅需执行一次）
 
 ## 历史踩坑（重要，勿再踩）
 1. **端口被环境变量劫持**：AI 沙箱执行时会注入 `SERVER_PORT` 环境变量，覆盖 application.properties，
@@ -30,8 +31,9 @@
 
 ## 接口一览（controller 前缀 /api）
 - `GET  /api/health` — 健康检查
-- `POST /api/login` — 密码登录
-- `POST /api/register` — 注册
+- `POST /api/login` — 密码/验证码登录，响应 `user` 含 `role`
+- `POST /api/admin/login` — 管理员密码登录，仅 `role=0` 返回 200，普通用户返回 403
+- `POST /api/register` — 注册，固定写入 `role=1`，密码明文保存
 - `POST /api/send-code` — 发验证码
 - `GET  /api/me` — 当前用户（带 token）
 

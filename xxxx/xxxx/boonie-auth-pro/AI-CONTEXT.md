@@ -10,8 +10,23 @@
 - 前端所有请求走相对路径 `/api/*`，由 Vite 代理转发到 `http://localhost:8080`
 - `server/index.js` 是旧的 Express 假后端，**已弃用**（不再启动），仅作参考保留
 - 页面流程：未登录 → 登录/注册页（App.vue 里 `.auth-page`）；登录成功 → 首页 `src/views/HomePage.vue`（无 vue-router，用登录态 `session` 切换）
-- 首页目前**只做前端**：导航栏 + 搜索栏 + 快速入口/推荐流等示例数据；接口路径已在 `HomePage.vue` 的 `API` 常量里预留（/api/home/feed、/api/search、/api/notice、/api/user/profile），后端尚未实现
-- 纯前端预览首页：地址栏访问 `http://localhost:5173/?demo=1`（App.vue 里的 demo 模式，不依赖后端）
+- 首页子页面（2026-11-04 已开发，纯前端示例数据）：快速入口 4 页已接入，由 `HomePage.vue` 里的 `currentView` 切换（非路由）：
+  - `src/views/SquarePage.vue` 森林广场（发布/点赞/评论）
+  - `src/views/ShopPage.vue` 蜂蜜商店（松果余额/满 50 减 10/兑换记录）
+  - `src/views/TaskPage.vue` 任务中心（每日/每周/成就、签到、进度条领奖）
+  - `src/views/RankPage.vue` 熊岭排行榜（领奖台 + 三榜切换）
+  - 导航栏「森林广场/蜂蜜商店」同样切到子页面；「我的园地」仍是占位
+- 首页推荐流/搜索接口路径已在 `HomePage.vue` 的 `API` 常量里预留（/api/home/feed、/api/search、/api/notice、/api/user/profile），后端尚未实现
+- **后台管理系统（2026-11-04 已开发）**：仅 `user.role === 0` 的管理员能看到导航栏/移动抽屉的「🛠 后台管理」按钮；点击后 `emit('open-admin')` → `App.vue` 全屏切换到后台（不显示前台导航），普通用户（`role=1`）无入口且不能登录后台：
+  - `src/views/AdminLogin.vue` 仅登录（无注册）：调用 `POST /api/admin/login`，由后端校验用户表 `role=0`；演示管理员 `admin@boonie.com` / `bear123456`
+  - `src/views/AdminLayout.vue` 后台框架：左侧 7 个模块 + 顶栏（返回前台 / 退出登录），模块组件在 `src/views/admin/`
+  - 模块：数据概览 / 广场动态 / 商店商品 / 任务配置 / 排行榜数据 / 首页内容（公告·推荐流·热搜词·快速入口）/ 系统设置（松果余额、恢复示例数据、导出 JSON）
+  - 后台登录态存 `localStorage.boonie_admin_session`（含 role），刷新免登录；「退出」回登录页
+- **共享数据仓库 `src/store/data.js`**（前后台共用，localStorage 持久化 key `boonie_mock_data_v1`）：
+  `store.posts / goods / tasks / boards / feed / notices / hotWords / quickEntries / wallet / userState`
+  后台增删改即时反映到前台各页面；接后端时只需替换 store 初始数据来源，页面无需改动
+  （旧的 `src/store/homeData.js` 已合并删除，勿再引用）
+- 纯前端预览首页：地址栏访问 `http://localhost:5173/?demo=1`（App.vue 里的 demo 模式，不依赖后端；演示用户设为 `role=0`，后台登录仍需调用真实后端接口）
 
 ## 一键脚本（根目录，GBK 编码，双击即可）
 - `start.bat`：检查 node_modules → 缺失则自动 `npm ci`（国内镜像 npmmirror，失败降级 npm install）
@@ -38,7 +53,11 @@ npx vite
 
 ## 文件地图
 - `src/` — 前端（main.js / App.vue / components/AuthCard.vue / components/ForestPanel.vue / views/HomePage.vue / style.css）
-  - `App.vue` — 登录态守卫：`session` 有值显示 HomePage，否则显示登录页；`?demo=1` 直接进首页
+  - `App.vue` — 登录态守卫：`session` 有值显示 HomePage，否则显示登录页；`?demo=1` 直接进首页；`adminRoute` 控制后台（login / panel）
+  - `store/data.js` — 前后台共享数据仓库（localStorage 持久化）
+  - `admin.css` — 后台专用样式（`a-` 前缀，由 AdminLayout 引入）
+  - `views/admin/` — 后台 7 个模块组件
+  - `AdminLogin.vue` / `AdminLayout.vue` — 后台登录页与框架
   - `AuthCard.vue` — 登录/注册卡片，登录成功后 `emit('login-success')` 给 App.vue，不再内嵌欢迎页
   - `HomePage.vue` — 首页（导航栏 + 搜索栏 + 示例内容），「退出登录」在右上角头像下拉菜单里
 - `server/index.js` — 旧 Express 后端（已弃用，勿启动，会和 Java 后端抢 8080）

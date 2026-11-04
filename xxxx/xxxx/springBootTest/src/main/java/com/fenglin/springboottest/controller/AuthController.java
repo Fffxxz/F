@@ -22,6 +22,7 @@ public class AuthController {
         m.put("id", u.getId());
         m.put("name", u.getName());
         m.put("email", u.getEmail());
+        m.put("role", u.getRole());
         return m;
     }
 
@@ -60,6 +61,16 @@ public class AuthController {
         m.put("token", token);
         m.put("user", publicUser(u));
         m.put("method", byCode ? "code" : "password");
+        return m;
+    }
+
+    @PostMapping("/admin/login")
+    public Map<String, Object> adminLogin(@RequestBody Map<String, String> body) {
+        User u = authService.loginAdminByPassword(body.get("email"), body.get("password"));
+        String token = authService.issueToken(u);
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("token", token);
+        m.put("user", publicUser(u));
         return m;
     }
 

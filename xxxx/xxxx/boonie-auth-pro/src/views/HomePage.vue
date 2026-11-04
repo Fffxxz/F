@@ -27,6 +27,12 @@
             🔔<i class="dot"></i>
           </button>
 
+          <!-- 后台管理系统入口：仅管理员可见 -->
+          <button v-if="isAdmin" type="button" class="admin-btn" title="进入后台管理系统" @click="openAdmin">
+            <span class="admin-ico">🛠</span>
+            <span class="admin-txt">后台管理</span>
+          </button>
+
           <div class="user" :class="{ open: menuOpen }">
             <button type="button" class="user-btn" @click="menuOpen = !menuOpen">
               <span class="avatar">{{ avatarText }}</span>
@@ -55,8 +61,8 @@
       </div>
     </header>
 
-    <!-- ===================== Hero + 搜索栏 ===================== -->
-    <div class="container hero-wrap">
+    <!-- ===================== Hero + 搜索栏（仅首页视图显示） ===================== -->
+    <div v-if="currentView === 'home'" class="container hero-wrap">
       <section class="hero">
         <div class="sun"></div>
         <div class="clouds">
@@ -147,13 +153,13 @@
       </transition>
     </div>
 
-    <!-- ===================== 主体内容 ===================== -->
-    <main class="container body">
+    <!-- ===================== 主体内容（首页视图） ===================== -->
+    <main v-if="currentView === 'home'" class="container body">
       <div class="col-main">
         <section class="block">
           <div class="block-head">
             <h2>快速入口</h2>
-            <span class="block-sub">其他页面暂未开发</span>
+            <span class="block-sub">点击进入对应页面</span>
           </div>
           <div class="quick-grid">
             <button
@@ -161,12 +167,11 @@
               :key="q.title"
               type="button"
               class="quick"
-              @click="notReady(q.title)"
+              @click="openQuick(q)"
             >
               <span class="quick-ico">{{ q.icon }}</span>
               <strong>{{ q.title }}</strong>
               <small>{{ q.desc }}</small>
-              <em class="soon">敬请期待</em>
             </button>
           </div>
         </section>
@@ -229,6 +234,11 @@
       </aside>
     </main>
 
+    <!-- ===================== 子页面视图（快速入口 / 后台管理） ===================== -->
+    <main v-else class="container subpage">
+      <component :is="currentComponent" :user="user" @back="goHome" />
+    </main>
+
     <footer class="foot">
       🐻 熊出没 · 狗熊岭森林 — 当前为纯前端演示，数据接口待后端接入
     </footer>
@@ -253,6 +263,9 @@
           >
             <span>{{ m.icon }}</span>{{ m.label }}
           </button>
+          <button v-if="isAdmin" type="button" class="admin-drawer" @click="openAdmin">
+            <span>🛠</span>后台管理
+          </button>
           <button type="button" class="logout" @click="doLogout">
             <span>🚪</span>退出登录
           </button>
@@ -269,11 +282,16 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { store } from '../store/data'
+import SquarePage from './SquarePage.vue'
+import ShopPage from './ShopPage.vue'
+import TaskPage from './TaskPage.vue'
+import RankPage from './RankPage.vue'
 
 const props = defineProps({
   user: { type: Object, default: null }
 })
-const emit = defineEmits(['logout'])
+const emit = defineEmits(['logout', 'open-admin'])
 
 /* ------------------------------------------------------------------
  * 后端接口预留：当前只做前端页面，接口路径先占位。
@@ -295,6 +313,7 @@ const apiList = [
 const userName = computed(() => props.user?.name || '森林访客')
 const userEmail = computed(() => props.user?.email || '未获取到邮箱')
 const avatarText = computed(() => (userName.value || '熊').slice(0, 1))
+const isAdmin = computed(() => props.user?.role === 0)
 
 const greeting = computed(() => {
   const h = new Date().getHours()
@@ -305,7 +324,7 @@ const greeting = computed(() => {
   return '晚上好'
 })
 
-/* 导航栏菜单（除首页外均为占位） */
+/* 导航栏菜单（森林广场/蜂蜜商店已接入子页面，我的园地为占位） */
 const menus = [
   { key: 'home', icon: '🏡', label: '首页' },
   { key: 'square', icon: '🎋', label: '森林广场' },
@@ -317,31 +336,25 @@ const menuOpen = ref(false)
 const drawerOpen = ref(false)
 const scrolled = ref(false)
 
+/* 视图切换：home 为首页面板，其余为快速入口子页面（项目未引入 vue-router） */
+const currentView = ref('home')
+const viewComponents = {
+  square: SquarePage,
+  shop: ShopPage,
+  task: TaskPage,
+  rank: RankPage
+}
+const currentComponent = computed(() => viewComponents[currentView.value] || null)
+
 /* 搜索栏 */
 const keyword = ref('')
 const searched = ref('')
 const searchEl = ref(null)
-const hotWords = ['蜂蜜', '古树巡护', '森林运动会', '光头强', '森林防火', '蘑菇采集']
-
-/* 示例数据（待接口接入） */
-const quickEntries = [
-  { icon: '🎋', title: '森林广场', desc: '看看大家在聊什么' },
-  { icon: '🍯', title: '蜂蜜商店', desc: '用松果兑换森林好物' },
-  { icon: '📜', title: '任务中心', desc: '完成每日森林任务' },
-  { icon: '🏆', title: '熊岭排行榜', desc: '最勤劳的小动物是谁' }
-]
-const feedList = ref([
-  { id: 1, icon: '🍯', title: '光头强的蜂蜜搬运计划', desc: '森林北坡发现巨型蜂巢，熊二已经出发了…', tag: '冒险', hot: '2.1w' },
-  { id: 2, icon: '🌳', title: '狗熊岭古树巡护日记', desc: '第 108 号古樟需要搭建防护围栏。', tag: '公益', hot: '8.6k' },
-  { id: 3, icon: '🏆', title: '森林运动会报名中', desc: '拔河 / 攀树 / 采蜜三项赛，等你来挑战。', tag: '活动', hot: '5.3k' },
-  { id: 4, icon: '🎣', title: '溪流垂钓小课堂', desc: '新手也能钓上大鲤鱼的三个小技巧。', tag: '教程', hot: '3.9k' }
-])
-const notices = [
-  '森林运动会将于本周六在中央草坪开幕',
-  '北坡蜂巢区域暂时封闭，注意绕行',
-  '春季植树活动开始招募志愿者啦',
-  '首页数据接口正在接入中，敬请期待'
-]
+/* 首页展示数据来自共享 store（后台管理系统修改后实时生效） */
+const hotWords = computed(() => store.hotWords)
+const quickEntries = computed(() => store.quickEntries)
+const feedList = computed(() => store.feed)
+const notices = computed(() => store.notices)
 
 /* 装饰：云朵 & 飘落的树叶 */
 const clouds = [
@@ -367,15 +380,34 @@ function showToast(msg) {
 
 /* 交互 */
 function goHome() {
+  currentView.value = 'home'
   activeMenu.value = 'home'
   window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+function openView(view) {
+  currentView.value = view
+  activeMenu.value = view
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+function openQuick(q) {
+  openView(q.view)
+}
+/* 后台管理入口：交给 App.vue 切换到后台（登录页 / 管理台） */
+function openAdmin() {
+  if (!isAdmin.value) return
+  menuOpen.value = false
+  drawerOpen.value = false
+  emit('open-admin')
 }
 function switchMenu(m) {
   if (m.key === 'home') {
     goHome()
     return
   }
-  activeMenu.value = 'home'
+  if (viewComponents[m.key]) {
+    openView(m.key)
+    return
+  }
   notReady(m.label)
 }
 function notReady(name) {
@@ -574,6 +606,36 @@ onBeforeUnmount(() => {
   border-radius: 50%;
   background: var(--danger);
   border: 1.5px solid #fff;
+}
+
+/* 后台管理系统入口按钮 */
+.admin-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 2px solid var(--wood-light);
+  background: linear-gradient(160deg, #fff, #fdf3e2);
+  color: var(--forest-deep);
+  font-size: 13px;
+  font-weight: 800;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.admin-btn:hover {
+  border-color: var(--forest);
+  background: linear-gradient(160deg, #f0f9f3, #e3f3e8);
+  box-shadow: 0 8px 18px rgba(47, 125, 79, 0.18);
+  transform: translateY(-1px);
+}
+.admin-btn:active {
+  transform: translateY(0);
+}
+.admin-ico {
+  font-size: 15px;
 }
 
 .user {
@@ -1038,17 +1100,9 @@ onBeforeUnmount(() => {
   color: var(--muted);
   line-height: 1.5;
 }
-.soon {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  font-style: normal;
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--wood);
-  background: rgba(200, 155, 99, 0.16);
-  padding: 2px 7px;
-  border-radius: 999px;
+/* ---------------- 子页面容器 ---------------- */
+.subpage {
+  margin-top: 26px;
 }
 
 .feed {
@@ -1330,6 +1384,12 @@ onBeforeUnmount(() => {
   }
   .uname,
   .caret {
+    display: none;
+  }
+  .admin-btn {
+    padding: 0 10px;
+  }
+  .admin-txt {
     display: none;
   }
   .user-btn {

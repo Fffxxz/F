@@ -16,7 +16,9 @@ public class User {
     private String name;
     /** 登录邮箱（唯一） */
     private String email;
-    /** BCrypt 密码哈希 */
-    private String passwordHash;
+    /** 明文密码（按项目要求不加密） */
+    private String password;
+    /** 权限：0 管理员，1 普通用户 */
+    private Integer role;
     private LocalDateTime createdAt;
 }

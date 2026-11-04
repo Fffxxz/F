@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS boonie_user (
   id            BIGINT AUTO_INCREMENT PRIMARY KEY,
   name          VARCHAR(64)  NOT NULL COMMENT '用户名/显示名',
   email         VARCHAR(128) NOT NULL UNIQUE COMMENT '登录邮箱',
-  password_hash VARCHAR(128) NOT NULL COMMENT 'BCrypt 哈希',
+  password      VARCHAR(128) NOT NULL COMMENT '明文密码',
+  role          TINYINT NOT NULL DEFAULT 1 COMMENT '权限：0 管理员，1 普通用户',
   created_at    DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

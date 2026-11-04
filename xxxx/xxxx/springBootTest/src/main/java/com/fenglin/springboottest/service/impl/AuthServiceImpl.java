@@ -6,7 +6,6 @@ import com.fenglin.springboottest.entity.User;
 import com.fenglin.springboottest.mapper.UserMapper;
 import com.fenglin.springboottest.service.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
@@ -19,8 +18,6 @@ public class AuthServiceImpl implements AuthService {
 
     @Autowired
     private UserMapper userMapper;
-    @Autowired
-    private PasswordEncoder passwordEncoder;
 
     /** email(lower) -> 验证码信息 */
     private final Map<String, CodeInfo> codeStore = new ConcurrentHashMap<>();
@@ -52,7 +49,8 @@ public class AuthServiceImpl implements AuthService {
         User u = new User();
         u.setName(username);
         u.setEmail(mail);
-        u.setPasswordHash(passwordEncoder.encode(password));
+        u.setPassword(password);
+        u.setRole(1);
         u.setCreatedAt(LocalDateTime.now());
         userMapper.insert(u);
         return u;
@@ -66,8 +64,16 @@ public class AuthServiceImpl implements AuthService {
                 new LambdaQueryWrapper<User>().eq(User::getEmail, email.trim().toLowerCase()));
         if (u == null)
             throw new BizException(401, "该邮箱尚未注册");
-        if (!passwordEncoder.matches(password, u.getPasswordHash()))
+        if (!password.equals(u.getPassword()))
             throw new BizException(401, "邮箱或密码不正确");
+        return u;
+    }
+
+    @Override
+    public User loginAdminByPassword(String email, String password) {
+        User u = loginByPassword(email, password);
+        if (!Integer.valueOf(0).equals(u.getRole()))
+            throw new BizException(403, "该账号为普通用户，无权登录后台管理系统");
         return u;
     }
 

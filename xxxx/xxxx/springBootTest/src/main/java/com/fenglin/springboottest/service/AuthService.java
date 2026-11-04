@@ -4,11 +4,14 @@ import com.fenglin.springboottest.entity.User;
 
 public interface AuthService {
 
-    /** 注册：校验 -> 去重 -> 写入（BCrypt 哈希） */
+    /** 注册：校验 -> 去重 -> 以普通权限写入明文密码 */
     User register(String username, String email, String password);
 
     /** 密码登录 */
     User loginByPassword(String email, String password);
+
+    /** 管理员密码登录：仅 role=0 允许 */
+    User loginAdminByPassword(String email, String password);
 
     /** 验证码登录 */
     User loginByCode(String email, String code);
